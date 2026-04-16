@@ -40,16 +40,7 @@ def _discount_factor(rate: float, years: float) -> float:
 
 
 def calculate_liabilities(shock_bps: int = 0) -> dict:
-    """
-    Calculate liability NPV and PV01 for a 30-year USD pension.
-
-    Liability stream: $15M × 1.025^t for t = 1..30
-    Discount curve:   flat at BASE_RATE + shock
-
-    Returns
-    -------
-    dict with keys: npv, pv01
-    """
+    """Calculate liability NPV and PV01 for a 30-year USD pension."""
     shock = shock_bps / 10_000
     rate_base = BASE_RATE + shock
     rate_up   = rate_base + 0.0001  # +1bp
@@ -64,16 +55,7 @@ def calculate_liabilities(shock_bps: int = 0) -> dict:
 
 
 def get_assets(shock_bps: int = 0) -> pd.DataFrame:
-    """
-    Build the asset universe with PV01 per $1M notional.
-
-    Instruments: UST 2Y, UST 5Y, UST 10Y, UST 30Y, USD Swap 10Y, USD Swap 30Y
-
-    Returns
-    -------
-    pd.DataFrame with columns:
-        Instrument, Tenor_Yrs, Yield, Type, Price, Mod_Duration, PV01_per_1M
-    """
+    """Build the asset universe with PV01 per $1M notional."""
     shock = shock_bps / 10_000
     raw = [
         {"Instrument": "UST 2Y",       "Tenor_Yrs": 2,  "Yield": 0.0465, "Type": "Treasury"},
@@ -91,24 +73,7 @@ def get_assets(shock_bps: int = 0) -> pd.DataFrame:
 
 
 def optimize_portfolio(assets: pd.DataFrame, target_pv01: float, budget_m: float) -> pd.DataFrame | None:
-    """
-    KRD-constrained portfolio optimizer (no Gurobi required).
-
-    For each bucket (Short / Intermediate / Long), allocates assets such that
-    the bucket's asset PV01 lands within ±BUCKET_TOLERANCE of the liability
-    target. Uses a greedy approach: highest PV01/M instrument first per bucket.
-
-    Parameters
-    ----------
-    assets      : DataFrame from get_assets()
-    target_pv01 : total liability PV01
-    budget_m    : available capital in $M
-
-    Returns
-    -------
-    DataFrame with added columns Optimal_Notional_M, Allocated_PV01,
-    or None if infeasible (budget too small).
-    """
+    """KRD-constrained portfolio optimizer (no Gurobi required)."""
     df = assets.copy().reset_index(drop=True)
     w  = np.zeros(len(df))
     total_notional = 0.0
@@ -159,14 +124,7 @@ def optimize_portfolio(assets: pd.DataFrame, target_pv01: float, budget_m: float
 
 
 def get_pv01_buckets(liab_pv01: float, portfolio: pd.DataFrame) -> pd.DataFrame:
-    """
-    Return per-bucket PV01 comparison with tolerance bands.
-
-    Returns
-    -------
-    pd.DataFrame with columns:
-        Bucket, Liability_PV01, Hedged_PV01, Tol_Low, Tol_High, Within_Tol, Deviation_Pct
-    """
+    """Return per-bucket PV01 comparison with tolerance bands."""
     rows = []
     for b in BUCKET_DEFS:
         liab_bucket = liab_pv01 * b["liab_share"]
@@ -214,13 +172,7 @@ def get_liability_cashflows() -> pd.DataFrame:
 
 
 def sensitivity_table(shock_range: list[int] | None = None) -> pd.DataFrame:
-    """
-    Compute liability NPV and PV01 across a range of yield shocks.
-
-    Parameters
-    ----------
-    shock_range : list of shock values in bps (default: -100 to +100 step 25)
-    """
+    """Compute liability NPV and PV01 across a range of yield shocks."""
     if shock_range is None:
         shock_range = list(range(-100, 125, 25))
     base = calculate_liabilities(0)
